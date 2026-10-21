@@ -1,0 +1,55 @@
+name: Account plugin icon fallback validation
+on:
+  push:
+    branches: [codex/account-plugin-icons-validation]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_NET_GIT_FETCH_WITH_CLI: true
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: codex/account-plugin-icon-fallback
+          persist-credentials: false
+      - name: Record tested revision
+        run: git rev-parse HEAD
+      - uses: dtolnay/rust-toolchain@d124f86f28ff42855784ff3319f48ac182c248f8
+        with:
+          components: rustfmt
+      - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            codex-rs/target
+          key: account-plugin-icons-${{ runner.os }}-${{ hashFiles('codex-rs/Cargo.lock') }}
+      - name: Install native build prerequisites
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev libcap-dev protobuf-compiler clang cmake pkg-config
+      - name: Format candidate and retain exact formatting patch
+        working-directory: codex-rs
+        run: |
+          cargo fmt --all -- --config imports_granularity=Item
+          git diff --binary -- core-plugins/src/remote_plugin_images.rs core-plugins/src/manager.rs app-server/src/request_processors/plugins.rs > "$RUNNER_TEMP/account-plugin-icons-format.patch"
+      - name: Retain formatting patch
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: account-plugin-icons-format
+          path: ${{ runner.temp }}/account-plugin-icons-format.patch
+          if-no-files-found: ignore
+      - name: Test remote image fallback
+        working-directory: codex-rs
+        run: cargo test --locked -p codex-core-plugins remote_plugin_images --lib
+      - name: Check app-server integration
+        working-directory: codex-rs
+        run: cargo check --locked -p codex-app-server --lib
