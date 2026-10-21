@@ -196,7 +196,7 @@ mod tests {
 
     #[test]
     fn preserves_remote_urls_and_only_fills_missing_images() {
-        let (_home, manager, mut summary, root) = fixture(true);
+        let (_home, manager, mut summary, root) = fixture(/*portable*/ true);
         let interface = summary.interface.as_mut().unwrap();
         interface.composer_icon_url = Some("https://example.com/composer.svg".to_string());
         interface.logo_url_dark = Some("https://example.com/dark.svg".to_string());
@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn installed_endpoint_can_use_its_version_when_local_version_is_absent() {
-        let (_home, manager, mut summary, root) = fixture(true);
+        let (_home, manager, mut summary, root) = fixture(/*portable*/ true);
         summary.local_version = None;
         manager.populate_remote_plugin_image_paths(&mut summary);
         assert_eq!(
@@ -220,7 +220,7 @@ mod tests {
     #[test]
     fn refuses_uninstalled_stale_or_mismatched_identity() {
         for mismatch in ["uninstalled", "version", "remote-id", "name", "id"] {
-            let (_home, manager, mut summary, _root) = fixture(true);
+            let (_home, manager, mut summary, _root) = fixture(/*portable*/ true);
             match mismatch {
                 "uninstalled" => summary.installed = false,
                 "version" => summary.local_version = Some("2.0.0".to_string()),
@@ -238,7 +238,7 @@ mod tests {
     #[test]
     fn rejects_missing_assets_directories_and_traversal_paths() {
         for path in ["./missing.svg", "./assets", "./../outside.svg"] {
-            let (_home, manager, mut summary, root) = fixture(false);
+            let (_home, manager, mut summary, root) = fixture(/*portable*/ false);
             fs::write(
                 root.join(".codex-plugin/plugin.json"),
                 serde_json::to_vec(&json!({
@@ -257,7 +257,7 @@ mod tests {
     #[test]
     fn refuses_a_manifest_with_a_different_identity_or_version() {
         for field in ["name", "version"] {
-            let (_home, manager, mut summary, root) = fixture(true);
+            let (_home, manager, mut summary, root) = fixture(/*portable*/ true);
             let path = root.join("plugin.json");
             let mut manifest: serde_json::Value =
                 serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
@@ -271,7 +271,7 @@ mod tests {
 
     #[test]
     fn refuses_a_cache_without_the_persisted_remote_identity() {
-        let (_home, manager, mut summary, _root) = fixture(true);
+        let (_home, manager, mut summary, _root) = fixture(/*portable*/ true);
         let id = PluginId::parse(&summary.id).unwrap();
         fs::remove_file(
             manager
@@ -288,7 +288,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn rejects_an_asset_symlink_outside_the_installed_package() {
-        let (home, manager, mut summary, root) = fixture(false);
+        let (home, manager, mut summary, root) = fixture(/*portable*/ false);
         let outside = home.path().join("outside.svg");
         fs::write(&outside, "outside").unwrap();
         fs::remove_file(root.join("assets/icon.svg")).unwrap();
