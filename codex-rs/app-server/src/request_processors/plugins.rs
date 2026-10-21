@@ -740,13 +740,9 @@ impl PluginRequestProcessor {
             {
                 Ok(outcome) => {
                     remote_catalog_cache_refresh_scopes = outcome.catalog_cache_refresh_scopes;
-                    for remote_marketplace in outcome
-                        .marketplaces
-                        .into_iter()
-                        .map(|marketplace| {
-                            remote_marketplace_to_info(marketplace, plugin_policy, &plugins_manager)
-                        })
-                    {
+                    for remote_marketplace in outcome.marketplaces.into_iter().map(|marketplace| {
+                        remote_marketplace_to_info(marketplace, plugin_policy, &plugins_manager)
+                    }) {
                         data.push(remote_marketplace);
                     }
                 }

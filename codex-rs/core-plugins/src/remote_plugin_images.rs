@@ -93,7 +93,14 @@ mod tests {
     use std::fs;
     use tempfile::TempDir;
 
-    fn fixture(portable: bool) -> (TempDir, PluginsManager, RemotePluginSummary, AbsolutePathBuf) {
+    fn fixture(
+        portable: bool,
+    ) -> (
+        TempDir,
+        PluginsManager,
+        RemotePluginSummary,
+        AbsolutePathBuf,
+    ) {
         let home = TempDir::new().unwrap();
         let manager = test_plugins_manager(home.path().to_path_buf());
         let id = PluginId::new(
@@ -133,7 +140,10 @@ mod tests {
             )
         };
         fs::write(path, serde_json::to_vec(&manifest).unwrap()).unwrap();
-        manager.store.write_remote_plugin_id(&id, "remote-example").unwrap();
+        manager
+            .store
+            .write_remote_plugin_id(&id, "remote-example")
+            .unwrap();
         let summary = RemotePluginSummary {
             id: id.as_key(),
             remote_plugin_id: "remote-example".to_string(),
@@ -151,17 +161,23 @@ mod tests {
             availability: PluginAvailability::Available,
             disabled_reason: None,
             eligible_plan_types: None,
-            interface: Some(serde_json::from_value(json!({
-                "displayName": "Catalog title", "capabilities": [],
-                "screenshots": [], "screenshotUrls": []
-            })).unwrap()),
+            interface: Some(
+                serde_json::from_value(json!({
+                    "displayName": "Catalog title", "capabilities": [],
+                    "screenshots": [], "screenshotUrls": []
+                }))
+                .unwrap(),
+            ),
             keywords: vec!["catalog".to_string()],
         };
         (home, manager, summary, root)
     }
 
     fn image(root: &AbsolutePathBuf, name: &str) -> AbsolutePathBuf {
-        AbsolutePathBuf::from_absolute_path_checked(root.join("assets").join(name).canonicalize().unwrap()).unwrap()
+        AbsolutePathBuf::from_absolute_path_checked(
+            root.join("assets").join(name).canonicalize().unwrap(),
+        )
+        .unwrap()
     }
 
     #[test]
@@ -195,7 +211,10 @@ mod tests {
         let (_home, manager, mut summary, root) = fixture(true);
         summary.local_version = None;
         manager.populate_remote_plugin_image_paths(&mut summary);
-        assert_eq!(summary.interface.unwrap().logo, Some(image(&root, "icon.svg")));
+        assert_eq!(
+            summary.interface.unwrap().logo,
+            Some(image(&root, "icon.svg"))
+        );
     }
 
     #[test]
@@ -220,10 +239,15 @@ mod tests {
     fn rejects_missing_assets_directories_and_traversal_paths() {
         for path in ["./missing.svg", "./assets", "./../outside.svg"] {
             let (_home, manager, mut summary, root) = fixture(false);
-            fs::write(root.join(".codex-plugin/plugin.json"), serde_json::to_vec(&json!({
-                "name": "example", "version": "1.0.0",
-                "interface": {"logo": path}
-            })).unwrap()).unwrap();
+            fs::write(
+                root.join(".codex-plugin/plugin.json"),
+                serde_json::to_vec(&json!({
+                    "name": "example", "version": "1.0.0",
+                    "interface": {"logo": path}
+                }))
+                .unwrap(),
+            )
+            .unwrap();
             let before = summary.clone();
             manager.populate_remote_plugin_image_paths(&mut summary);
             assert_eq!(summary, before, "{path}");
@@ -249,7 +273,13 @@ mod tests {
     fn refuses_a_cache_without_the_persisted_remote_identity() {
         let (_home, manager, mut summary, _root) = fixture(true);
         let id = PluginId::parse(&summary.id).unwrap();
-        fs::remove_file(manager.store.plugin_base_root(&id).join(".codex-remote-plugin-install.json")).unwrap();
+        fs::remove_file(
+            manager
+                .store
+                .plugin_base_root(&id)
+                .join(".codex-remote-plugin-install.json"),
+        )
+        .unwrap();
         let before = summary.clone();
         manager.populate_remote_plugin_image_paths(&mut summary);
         assert_eq!(summary, before);
