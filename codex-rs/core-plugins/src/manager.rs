@@ -1,5 +1,7 @@
 #[path = "remote_mutations.rs"]
 mod remote_mutations;
+#[path = "remote_plugin_images.rs"]
+mod remote_plugin_images;
 pub use remote_mutations::RemotePluginInstallOutcome;
 pub use remote_mutations::RemotePluginInstallRequest;
 pub use remote_mutations::RemotePluginOperationError;

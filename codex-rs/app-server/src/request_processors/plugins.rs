@@ -692,6 +692,7 @@ impl PluginRequestProcessor {
                     data.push(remote_marketplace_to_info(
                         remote_marketplace,
                         plugin_policy,
+                        &plugins_manager,
                     ));
                 }
                 Ok(None) => {}
@@ -742,7 +743,9 @@ impl PluginRequestProcessor {
                     for remote_marketplace in outcome
                         .marketplaces
                         .into_iter()
-                        .map(|marketplace| remote_marketplace_to_info(marketplace, plugin_policy))
+                        .map(|marketplace| {
+                            remote_marketplace_to_info(marketplace, plugin_policy, &plugins_manager)
+                        })
                     {
                         data.push(remote_marketplace);
                     }
@@ -989,7 +992,9 @@ impl PluginRequestProcessor {
         match remote_marketplaces {
             Ok(remote_marketplaces) => remote_marketplaces
                 .into_iter()
-                .map(|marketplace| remote_marketplace_to_info(marketplace, plugin_policy))
+                .map(|marketplace| {
+                    remote_marketplace_to_info(marketplace, plugin_policy, &plugins_manager)
+                })
                 .collect(),
             Err(
                 RemotePluginCatalogError::AuthRequired
@@ -2209,9 +2214,13 @@ fn plugin_app_category_by_id_from_value(value: &serde_json::Value) -> HashMap<St
 }
 
 fn remote_marketplace_to_info(
-    marketplace: RemoteMarketplace,
+    mut marketplace: RemoteMarketplace,
     plugin_policy: &PluginsConfigToml,
+    plugins_manager: &codex_core_plugins::PluginsManager,
 ) -> PluginMarketplaceEntry {
+    for summary in &mut marketplace.plugins {
+        plugins_manager.populate_remote_plugin_image_paths(summary);
+    }
     PluginMarketplaceEntry {
         name: marketplace.name,
         path: None,
