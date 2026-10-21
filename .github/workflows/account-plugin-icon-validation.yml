@@ -39,7 +39,7 @@ jobs:
         working-directory: codex-rs
         run: |
           cargo fmt --all -- --config imports_granularity=Item
-          git diff --binary -- core-plugins/src/remote_plugin_images.rs core-plugins/src/manager.rs app-server/src/request_processors/plugins.rs > "$RUNNER_TEMP/account-plugin-icons-format.patch"
+          git diff --binary -- core-plugins/src/remote_plugin_images.rs core-plugins/src/manager.rs app-server/src/request_processors/plugins.rs app-server/src/request_processors/plugins/search.rs > "$RUNNER_TEMP/account-plugin-icons-format.patch"
       - name: Retain formatting patch
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
