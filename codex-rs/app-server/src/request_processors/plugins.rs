@@ -1216,7 +1216,12 @@ impl PluginRequestProcessor {
                 )
                 .await;
                 let plugin_policy = &config.plugins;
-                remote_plugin_detail_to_info(remote_detail, app_summaries, plugin_policy)
+                remote_plugin_detail_to_info(
+                    remote_detail,
+                    app_summaries,
+                    plugin_policy,
+                    &plugins_manager,
+                )
             }
         };
 
@@ -1395,7 +1400,11 @@ impl PluginRequestProcessor {
                 summary,
                 local_plugin_path,
             } = summary;
-            let plugin = remote_plugin_summary_to_info(summary, plugin_policy);
+            let plugin = remote_plugin_summary_to_info(
+                summary,
+                plugin_policy,
+                &self.thread_manager.plugins_manager(),
+            );
             PluginShareListItem {
                 plugin,
                 local_plugin_path,
@@ -2210,13 +2219,10 @@ fn plugin_app_category_by_id_from_value(value: &serde_json::Value) -> HashMap<St
 }
 
 fn remote_marketplace_to_info(
-    mut marketplace: RemoteMarketplace,
+    marketplace: RemoteMarketplace,
     plugin_policy: &PluginsConfigToml,
     plugins_manager: &codex_core_plugins::PluginsManager,
 ) -> PluginMarketplaceEntry {
-    for summary in &mut marketplace.plugins {
-        plugins_manager.populate_remote_plugin_image_paths(summary);
-    }
     PluginMarketplaceEntry {
         name: marketplace.name,
         path: None,
@@ -2226,15 +2232,17 @@ fn remote_marketplace_to_info(
         plugins: marketplace
             .plugins
             .into_iter()
-            .map(|summary| remote_plugin_summary_to_info(summary, plugin_policy))
+            .map(|summary| remote_plugin_summary_to_info(summary, plugin_policy, plugins_manager))
             .collect(),
     }
 }
 
 fn remote_plugin_summary_to_info(
-    summary: RemoteCatalogPluginSummary,
+    mut summary: RemoteCatalogPluginSummary,
     plugin_policy: &PluginsConfigToml,
+    plugins_manager: &codex_core_plugins::PluginsManager,
 ) -> PluginSummary {
+    plugins_manager.populate_remote_plugin_image_paths(&mut summary);
     let enabled = summary.enabled && plugin_policy.allows_plugin(&summary.id);
     PluginSummary {
         id: summary.id,
@@ -2305,8 +2313,9 @@ fn remote_plugin_detail_to_info(
     detail: RemoteCatalogPluginDetail,
     apps: Vec<AppSummary>,
     plugin_policy: &PluginsConfigToml,
+    plugins_manager: &codex_core_plugins::PluginsManager,
 ) -> PluginDetail {
-    let summary = remote_plugin_summary_to_info(detail.summary, plugin_policy);
+    let summary = remote_plugin_summary_to_info(detail.summary, plugin_policy, plugins_manager);
     let app_templates = detail
         .app_templates
         .into_iter()
